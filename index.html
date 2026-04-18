@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timplets</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.7.0/fonts/remixicon.css" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="head">Timplets</header>
+
+
+
+
+
+<main id="app">
+
+
+    
+
+  <section id="flashcards" class="page active">
+    
+    
+    
+   <div id="video-container" class="Container-design ">
+     
+     
+     
+  
+     
+     
+     
+     <button id="template" class="template-preview">
+       <img src="Assets/Live-Video--Streamline-Core-Neon.svg">
+     </button>
+     
+     
+   </div>
+   
+   
+   
+   
+
+    <div id="commentModal" class="comment-modal hidden">
+
+  <div class="comment-backdrop"></div>
+
+  <div class="comment-sheet">
+
+    <div class="comment-header">
+      <span>Comments</span>
+      <button id="closeComment">✕</button>
+    </div>
+    
+     <div class="comment-input-area">
+      <input type="text" id="commentInput" placeholder="Write a comment..." />
+      <button id="sendComment">Post</button>
+    </div>
+
+  <div id="commentList" class="comment-list"></div>
+
+   
+
+  </div>
+</div>
+   
+ 
+    
+    
+    
+    
+  </section>
+  
+  
+    <!--Upload-Section-->
+  <section id="upload-section">
+
+  <div class="upload-header">
+    <button id="closeUploadBtn">✕</button>
+    <h3>Post</h3>
+    <button id="confirmUploadBtn" class="Share-btn">
+      Share
+    </button>
+  </div>
+  
+  <div class="Media-body">
+    
+    <div class="previewVideo-class">
+    <video id="previewVideo" controls ></video>
+    </div>
+
+  </div>
+
+  <div class="upload-body">
+
+    <input type="file" id="videoInput" accept="video/*" hidden>
+
+    <button id="selectVideoBtn" class="select-upload">
+      Tap to Upload
+    </button>
+
+    
+    <textarea 
+      id="captionInput" 
+      placeholder="write a caption"
+    ></textarea>
+
+    
+
+  </div>
+
+</section>
+
+
+
+  <section id="profile" class="page">
+
+  <div class="profile-header">
+    <div class="Profile-Wrap">
+    <button id="exitProfileBtn" class="exit-profile"><i class="ri-arrow-left-long-fill"></i></button>
+    
+    <button id="editProfileBtn" class="edit-profile">Edit profile</button>
+    
+    </div>
+    
+    <img id="profileAvatar" class="profile-avatar">
+    <div class="text-Wrapper">
+    <h3 id="profileUsername"></h3>
+    <h3 id="User-Bio"></h3>
+    </div>
+    <div class="Follow-Wrapper">
+  <button class="follow-design" id="follow-btn">
+    Follow
+  </button>
+  </div>
+  </div>
+  
+  <div class="User-Info">
+
+  <div class="info-box">
+    <span id="postCount">0</span>
+    <small>Posts</small>
+  </div>
+
+  <div class="info-box">
+    <span id="viewCount">0</span>
+    <small>Views</small>
+  </div>
+
+  <div class="info-box">
+    <span id="followerCount">0</span>
+    <small>Followers</small>
+  </div>
+  
+  
+
+
+</div>
+
+
+
+  <div id="profileVideo-cnt">
+    
+    
+  <div id="profileVideo">
+  </div>
+   
+  </div>
+
+</section>
+
+
+
+  <section id="edit-profile" class="page">
+
+  <div class="edit-header">
+  <button id="exitEditProfile"><i class="ri-arrow-left-long-fill"></i></button>
+   <!-- <h><i class="ri-settings-5-line"></i></h>-->
+  </div>
+
+  <div class="edit-body">
+
+    <img id="editAvatarPreview" class="edit-avatar">
+
+    <input type="file" id="avatarInput" accept="image/*" hidden>
+    <button id="changeAvatarBtn" class="changeAvatar">Change avatar</button>
+
+    <input id="editUsername" placeholder="Username">
+    <textarea id="editBio" placeholder="Bio"></textarea>
+
+    <button id="saveProfileBtn">Save</button>
+    
+    <button id="logoutBtn">Logout</button>
+
+  </div>
+
+</section>
+  
+
+
+
+  <section id="voice" class="page">
+<button id="create-room">Create room</button>
+<div id="input-container" class="hidden">
+  <div class="design">
+    <h>Create room</h>
+    <button class="close"><i class="ri-close-fill"></i></button>
+<input id="data">
+<button id="Confirm-btn"><span class="btn-text">Confirm</span>
+
+<div id="loader" class="hidden">Loading</div>
+</button>
+</div>
+</div>
+<div id="voice-card"></div>
+</section>
+
+
+        <!--Login-page-->
+ <section id="login" class="page">
+
+  <div class="login-card">
+
+    <h1 class="app-title">Timplets</h1>
+
+    <p class="login-subtitle">Welcome back 👋</p>
+
+    <button id="googleLoginBtn" class="login-btn google">
+      Continue with Google
+    </button>
+
+    <button id="guestLoginBtn" class="login-btn guest">
+      Continue as Guest
+    </button>
+
+  </div>
+
+
+  </section>
+
+  <!--
+  <section id="setupProfile" class="page">
+  <div class="setup-card">
+    <h2>Create Profile</h2>
+
+    <input id="usernameInput" placeholder="Enter username" />
+
+    <input type="file" id="avatarInput" />
+
+    <button id="saveProfileBtn">Save</button>
+  </div>
+</section>-->
+
+  <section id="setupProfile" class="page">
+  <div class="setup-container">
+
+    <h2 class="title">Create Your Profile</h2>
+
+    <!-- Avatar Upload -->
+    <div class="avatar-upload">
+      <label for="avatarInput" class="avatar-circle">
+        <span>+</span>
+      </label>
+      <input type="file" id="avatarInput" accept="image/*" hidden>
+      <p class="upload-text">Upload Photo</p>
+    </div>
+
+    <!-- Inputs -->
+    <input id="usernameInput" class="input" placeholder="@username">
+
+    <!-- Button -->
+    <button id="saveProfileBtn" class="primary-btn">
+      Get Started
+    </button>
+    
+    <button id="cancelSetupBtn" class="cancel-btn">
+    Cancel
+   </button>
+
+    <p class="footer-text">Join the Community</p>
+
+  </div>
+</section>
+
+
+</main>
+
+
+
+       <!--roomUI-->
+  <section id="roomUI" class="room hidden">
+  
+    <div class="UI-container">
+    
+    <div class="stage">
+        
+      
+   <div class="host-container">
+  <div class="host"><div class="avatar" data-slot="0"></div></div>
+  <div class="co-host"><div class="avatar" data-slot="1"></div></div>
+  <div class="co-host"><div class="avatar" data-slot="2"></div></div>
+</div>
+
+<div class="co-hosts">
+  <div class="co-host"><div class="avatar" data-slot="3"></div></div>
+  <div class="co-host"><div class="avatar" data-slot="4"></div></div>
+  <div class="co-host"><div class="avatar" data-slot="5"></div></div>
+</div>
+      
+    <div class="UI-ctrl-cont">
+      
+      
+       
+      
+      
+      <button id="requestBtn" class="">📩</button>
+      
+    
+      
+       <button class="mic-btn muted" id="micBtn">
+  <i class="ri-mic-off-line" id="micIcon"></i>
+   </button>
+
+      <button class="exit" id="close"><i class="ri-file-close-line"></i>
+         </button>
+      </div>
+    </div>
+    
+         <div id="requestPanel" class="request-panel hidden"></div>
+    
+  <div id="room-messages" class="messages-css">
+    
+  
+   
+
+
+    
+  </div>
+  
+  
+    <div id="chat" class="chat-design">
+    <input id="chatInput" placeholder="write a message...">
+    
+    <button id="sendChatBtn">send
+      </button>
+      
+    <button id="raiseHandBtn" class="raise-btn hidden">✋</button>
+      
+  </div>
+  
+
+  </div>
+  
+</section>
+
+
+  <!--Helpers-UI-->
+ <div id="leaveModal" class="modal hidden">
+  <div class="modal-box">
+
+    <h3>Leave voice room?</h3>
+    <p>You will disconnect from the room</p>
+
+    <div class="modal-actions">
+      <button id="cancelLeave" class="btn cancel">Cancel</button>
+      <button id="confirmLeave" class="btn leave">Leave</button>
+    </div>
+
+  </div>
+</div>
+
+
+ <nav class="nav-container">
+  
+  <button data-target="flashcards" class="active-btn">
+    <img src="Assets/Business-Card--Streamline-Core-Neon (1).svg">
+  </button>
+  
+  <button data-target="voice">
+    <img src="Assets/Voice-Scan-2--Streamline-Flex-Neon.svg">
+  </button>
+  
+  <button  data-target="profile">
+    <img src="Assets/User-Profile-Focus--Streamline-Core-Neon.svg">
+  </button>
+  
+</nav>
+
+
+  <!--Aogra-->
+ <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+
+
+ <script type="module" src="./js/app.js"></script>
+ 
+</body>
+</html>
