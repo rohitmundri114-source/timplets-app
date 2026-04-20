@@ -17,6 +17,7 @@ import {
   writeBatch,
   onSnapshot
 } from "../../services/firebase.js";
+import { stopAllVideos } from "../../helper/Syncuser.js";
 import { supabaseClient } from "../../services/supabase.js";
 import { Joinvoicechannel, leaveVoicechannel, updateMicUI } from "../../services/agora.js"; 
 
@@ -324,7 +325,7 @@ async function joinRoom(docId) {
     Voice.roomDeleteUnsub = watchRoomDeletion(docId);
 
     // ⭐ pause feed
-    pauseAllVideos?.();
+    stopAllVideos?.();
 
   } catch (err) {
     console.error(err);
@@ -443,6 +444,7 @@ if (!Voice.isRoomAdmin) {
 updateMicUI(true);
 }
 
+
 function showmessage(name, actionText, avatarUrl, type = "join") {
 
   const Msgcontainer = document.getElementById("room-messages");
@@ -455,18 +457,24 @@ function showmessage(name, actionText, avatarUrl, type = "join") {
     <img src="${avatarUrl || "default.png"}" onerror="this.src='default.png'">
     <span><b>${name}</b> ${actionText}</span>
   `;
-  if (Msgcontainer.children.length > 3) {
-  Msgcontainer.firstChild.remove();
-}
 
   Msgcontainer.appendChild(msg);
 
-  // ⭐ auto remove with fade
+  // limit messages
+  if (Msgcontainer.children.length > 3) {
+    Msgcontainer.firstChild.remove();
+  }
+
+  // auto scroll
+  Msgcontainer.scrollTop = Msgcontainer.scrollHeight;
+
+  // auto remove
   setTimeout(() => {
-    msg.style.animation = "msgExit 1500ms ease forwards";
-    setTimeout(() => msg.remove(), 3500);
-  }, 35000);
+    msg.style.animation = "msgExit 500ms ease forwards";
+    setTimeout(() => msg.remove(), 500);
+  }, 8000);
 }
+
 
 function resetUI() {
   document.getElementById("roomUI")?.classList.add("hidden");
@@ -480,33 +488,38 @@ function resetUI() {
 
 /***********ROOM-DATA************/
 
+
 async function ensureUserJoined(roomId) {
 
   try {
 
     const userRef = doc(db, "rooms", roomId, "users", CURRENT_USER_ID);
 
-    // ⭐ fetch profile (for username + avatar)
-    const { data, error } = await supabaseClient
+    const { data: profile, error } = await supabaseClient
       .from("profiles")
       .select("username, avatar_url")
       .eq("id", CURRENT_USER_ID)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Profile fetch error:", error);
       return;
     }
 
-    // ⭐ write user (no duplicate issue because of merge)
+    // STOP if no profile
+    if (!profile) {
+      console.error("No profile found ❌");
+      return;
+    }
+
     await setDoc(userRef, {
-      name: data?.username || "User",
-      avatarUrl: data?.avatar_url || null,
+      name: profile.username,
+      avatarUrl: profile.avatar_url,
       role: "listener",
       joinedAt: serverTimestamp()
     }, { merge: true });
 
-    console.log("User ensured in room");
+    console.log("User ensured in room ");
 
   } catch (err) {
     console.error("ensureUserJoined error:", err);
@@ -554,6 +567,7 @@ async function roomData(docId) {
 
 
 
+/*
 async function raiseHand() {
 
   if (!Voice.currentRoomId) return;
@@ -565,7 +579,7 @@ async function raiseHand() {
       .from("profiles")
       .select("username, avatar_url")
       .eq("id", CURRENT_USER_ID)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Profile fetch error:", error);
@@ -588,10 +602,86 @@ async function raiseHand() {
   } catch (e) {
     console.error("raiseHand error:", e);
   }
+  
+  console.log("raiseHand")
+}*/
+
+
+async function raiseHand() {
+
+  if (!Voice.currentRoomId) return;
+
+  try {
+
+    await setDoc(
+      doc(db, "rooms", Voice.currentRoomId, "requests", CURRENT_USER_ID),
+      {
+        name: Id.CURRENT_USER?.username || "User",
+        avatarUrl: Id.CURRENT_USER?.avatar_url || null,
+        requestedAt: serverTimestamp()
+      },
+      { merge: true }
+    );
+
+    console.log("Hand raised ✋");
+
+  } catch (e) {
+    console.error("raiseHand error:", e);
+  }
 }
 
 
+function listenForRequests(roomId) {
 
+  //  cleanup old listener
+  Voice.unsubscribeRequests?.();
+
+  Voice.unsubscribeRequests = onSnapshot(
+    collection(db, "rooms", roomId, "requests"),
+
+    (snapshot) => {
+
+      const panel = document.getElementById("requestPanel");
+      if (!panel) return;
+
+      panel.innerHTML = "";
+
+      if (snapshot.empty) {
+        panel.innerHTML = `<p class="no-requests">No requests</p>`;
+        return;
+      }
+
+      snapshot.forEach((docSnap) => {
+
+        const data = docSnap.data();
+        const uid = docSnap.id;
+
+        const item = document.createElement("div");
+        item.className = "request-item";
+
+        item.innerHTML = `
+          <img src="${data.avatarUrl || 'default.png'}" />
+          <span>${data.name || "User"}</span>
+          <button class="approve">Accept</button>
+        `;
+
+        item.querySelector(".approve")
+          .addEventListener("click", () => approveRequest(uid));
+
+        panel.appendChild(item);
+      });
+
+    },
+
+    (error) => {
+      console.error("Request listener error:", error);
+    }
+  );
+
+  console.log("Request listener started 🔥");
+}
+
+/*
 function listenForRequests(roomId) {
 
   const panel = document.getElementById("requestPanel");
@@ -629,10 +719,11 @@ function listenForRequests(roomId) {
 
     }
   );
-}
+  console.log("panel")
+}*/
 
 
-
+/*
 async function approveRequest(uid) {
 
   try {
@@ -651,6 +742,42 @@ async function approveRequest(uid) {
     );
 
     console.log("Approved");
+
+  } catch (e) {
+    console.error("approveRequest error:", e);
+  }
+  console.log("request")
+}*/
+
+async function approveRequest(uid) {
+
+  const roomId = Voice.currentRoomId;
+
+  if (!roomId || !uid) {
+    console.warn("Invalid approve request data");
+    return;
+  }
+
+  try {
+
+    const userRef = doc(db, "rooms", roomId, "users", uid);
+
+    // 🔥 check if user exists
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      console.warn("User not in room, skipping promote");
+    } else {
+      // ⭐ promote to speaker
+      await updateDoc(userRef, { role: "speaker" });
+    }
+
+    // ⭐ remove request ALWAYS
+    await deleteDoc(
+      doc(db, "rooms", roomId, "requests", uid)
+    );
+
+    console.log("Approved ");
 
   } catch (e) {
     console.error("approveRequest error:", e);
@@ -797,12 +924,10 @@ function watchRoomDeletion(roomId) {
 
 
 
-
 async function leaveroom() {
 
   if (!Voice.currentRoomId) return;
 
-  // 🔒 prevent double execution
   if (Voice.isLeaving) return;
   Voice.isLeaving = true;
 
@@ -810,37 +935,49 @@ async function leaveroom() {
 
   try {
 
-    // ⭐ leave Agora
-    await leaveVoicechannel();
+    // SAFE Agora leave
+    try {
+      await leaveVoicechannel();
+    } catch (e) {
+      console.warn("Agora leave failed:", e);
+    }
 
-    // ⭐ UX message
+    // show message
     showmessage("You", "left the room", null, "leave");
 
-    // ⭐ remove self from room
-    await deleteDoc(
-      doc(db, "rooms", roomId, "users", CURRENT_USER_ID)
-    );
+    // SAFE Firestore delete
+    if (CURRENT_USER_ID) {
+      await deleteDoc(
+        doc(db, "rooms", roomId, "users", CURRENT_USER_ID)
+      );
+    } else {
+      console.warn("User ID missing during leave");
+    }
 
   } catch (err) {
     console.error("leaveRoom error:", err);
-    Voice.isLeaving = false;
-    return;
   }
 
-  // ⭐ CLEANUP LISTENERS
-  Voice.unsubscribeRoom?.();
-  Voice.roomDeleteUnsub?.();
-  Voice.unsubscribeRequests?.();
-  Voice.unsubscribeMessages?.(); //  IMPORTANT
+  //  ALWAYS CLEANUP (even if error)
+  try {
+    Voice.unsubscribeRoom?.();
+    Voice.roomDeleteUnsub?.();
+    Voice.unsubscribeRequests?.();
+    Voice.unsubscribeMessages?.();
+  } catch (e) {
+    console.warn("Unsub error:", e);
+  }
 
   Voice.unsubscribeRoom = null;
   Voice.roomDeleteUnsub = null;
   Voice.unsubscribeRequests = null;
   Voice.unsubscribeMessages = null;
 
-  //  CLEAN CARD LISTENERS
+  //  card listeners
   if (Voice.cardListeners) {
-    Voice.cardListeners.forEach(unsub => unsub());
+    Voice.cardListeners.forEach(unsub => {
+      try { unsub(); } catch {}
+    });
     Voice.cardListeners = [];
   }
 
@@ -849,12 +986,9 @@ async function leaveroom() {
   Voice.isRoomAdmin = false;
   Voice.isLeaving = false;
 
-  //  CLEAR UI (SAFE)
-  const msgEl = document.getElementById("room-messages");
-  const reqEl = document.getElementById("requestPanel");
-
-  if (msgEl) msgEl.innerHTML = "";
-  if (reqEl) reqEl.innerHTML = "";
+  //  CLEAR UI
+  document.getElementById("room-messages")?.replaceChildren();
+  document.getElementById("requestPanel")?.replaceChildren();
 
   //  CLEAR MEMORY
   participants.clear();
@@ -862,14 +996,13 @@ async function leaveroom() {
   Voice.initialLoad = true;
   Voice.roomEnded = false;
 
-  // ⭐ RESET UI
+  //  UI reset
   setTimeout(() => {
     resetUI();
-  }, 800);
+  }, 500);
 
   console.log("users-left");
 }
-
 
 
 async function adminLeaveRoom(roomId) {
@@ -878,7 +1011,7 @@ async function adminLeaveRoom(roomId) {
 
   try {
 
-    // 🔒 prevent double execution
+    //  prevent double execution
     if (Voice.isLeaving) return;
     Voice.isLeaving = true;
 
@@ -982,7 +1115,7 @@ async function adminLeaveRoom(roomId) {
  
  
  
-
+/*
 async function sendMessage(roomId, text) {
 
   if (!text || !text.trim()) return;
@@ -1018,6 +1151,50 @@ async function sendMessage(roomId, text) {
         username,
         createdAt: serverTimestamp()
       }
+    );
+
+  } catch (err) {
+    console.error("Send message error:", err);
+  }
+}*/
+
+
+
+async function sendMessage(roomId, text) {
+
+  if (!text || !text.trim()) return;
+
+  try {
+
+    let username = Cache.currentUsername;
+
+    if (!username) {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("username")
+        .eq("id", Id.CURRENT_USER_ID)
+        .single();
+
+      if (error) {
+        console.error("Profile fetch error:", error);
+      }
+
+      username = data?.username || "User";
+      Cache.currentUsername = username;
+    }
+
+    const messageData = {
+      text: text.trim(),
+      userId: Id.CURRENT_USER_ID,
+      username,
+      createdAt: serverTimestamp(),   // server time
+      clientTime: Date.now()          //  instant fallback
+    };
+
+    //  SEND
+    await addDoc(
+      collection(db, "rooms", roomId, "messages"),
+      messageData
     );
 
   } catch (err) {

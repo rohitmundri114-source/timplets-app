@@ -21,46 +21,7 @@ import { syncUserProfile,initSetupProfile } from "../helper/Syncuser.js";
 import { Id } from "./state.js";
 import { navigate } from "./router.js";
 
-/*function startApp() {
 
-  console.log("App starting...");
-
-  initRouter();
-  initLoginPage();
-  setTimeout(() => {
-    initSetupProfile(); // ✅ delay ensures DOM ready
-  }, 50);
-  let initialized = false;
-
-  listenAuth(async (user) => {
-
-    if (user) {
-
-      console.log("User:", user.uid);
-
-      Id.CURRENT_USER_ID = user.uid;
-
-      //  IMPORTANT: SYNC PROFILE FIRST
-      await syncUserProfile(user);
-
-      //  INIT ONLY ONCE
-      if (!initialized) {
-        initialized = true;
-
-        initProfile();
-        initVideoFeed();
-        initVoiceRooms();
-      }
-
-    } else {
-
-      console.log("No user");
-      Id.CURRENT_USER_ID = null;
-    }
-
-  });
-
-}*/
 
 function startApp() {
 
