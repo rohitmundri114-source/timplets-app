@@ -3,7 +3,7 @@ import { Cache, Id } from "../state.js";
 import { supabaseClient } from "../../services/supabase.js";
 import { logout } from "../../services/auth.js";
 import { openFeedAtVideo } from "./videofeed.js";
-import { stopAllVideos } from "../../helper/Syncuser.js";
+import { stopAllVideos, requireAuth } from "../../helper/Syncuser.js";
 
 console.log("profile loading")
 
@@ -59,7 +59,7 @@ delete Cache.profilePostsCache[userId];
  
   navigate("profile");
 
-  // 🔴 INIT CACHE
+  //  INIT CACHE
   Cache.profileCache = Cache.profileCache || {};
   
   Cache.profilePostsCache = Cache.profilePostsCache || {};
@@ -72,7 +72,7 @@ delete Cache.profilePostsCache[userId];
   const editBtn = document.getElementById("editProfileBtn");
   const followBtn = document.getElementById("follow-btn");
 
-  // 🔴 BUTTON VISIBILITY
+  //  BUTTON VISIBILITY
   if (editBtn && followBtn) {
     if (userId === Id.CURRENT_USER_ID) {
       editBtn.style.display = "block";
@@ -106,7 +106,7 @@ delete Cache.profilePostsCache[userId];
     Cache.profileCache[key] = data;
   }
 
-  // 🔴 SAFE DOM UPDATE
+  //  SAFE DOM UPDATE
   const avatarEl = document.getElementById("profileAvatar");
   const usernameEl = document.getElementById("profileUsername");
   const bioEl = document.getElementById("User-Bio");
@@ -134,11 +134,11 @@ delete Cache.profilePostsCache[userId];
       return;
     }
 
-    posts = data || []; // 🔥 IMPORTANT FIX
+    posts = data || []; // IMPORTANT FIX
     Cache.profilePostsCache[key] = posts;
   }
 
-  console.log("Posts:", posts); // 🔥 DEBUG
+  console.log("Posts:", posts); //  DEBUG
 
   renderProfileVideos(posts);
 
@@ -167,7 +167,7 @@ delete Cache.profilePostsCache[userId];
   const followerEl = document.getElementById("followerCount");
   if (followerEl) followerEl.textContent = count || 0;
 
-  // 🔥 SET DATASET BEFORE CHECK
+  //  SET DATASET BEFORE CHECK
   if (followBtn) {
     followBtn.dataset.profileId = String(userId);
   }
@@ -183,31 +183,17 @@ delete Cache.profilePostsCache[userId];
 
 
 //checking-follow-state.
-/*
- async function checkFollowState(profileId) {
-
-  const { data } = await supabaseClient
-    .from("followers")
-    .select("*")
-    .eq("follower_id",
-    Id.CURRENT_USER_ID)
-    .eq("following_id", profileId)
-    .maybeSingle();
-
-  const btn = document.getElementById("follow-btn");
-
-  if (data) {
-    btn.textContent = "Following";
-    btn.dataset.following = "true";
-  } else {
-    btn.textContent = "Follow";
-    btn.dataset.following = "false";
-  }
-}*/
 
 async function checkFollowState(profileId) {
+  
 
   Cache.followCache = Cache.followCache || {};
+  
+ /* if(!Id.CURRENT_USER_ID){
+    console.log("guest-mode-ON")
+    return;
+  }
+  */
 
   const btn = document.getElementById("follow-btn");
   if (!btn) return;
@@ -251,18 +237,31 @@ async function checkFollowState(profileId) {
 
 //toggle-follow-BTN.
 
+
 document.getElementById("follow-btn")
 ?.addEventListener("click", async () => {
 
   const btn = document.getElementById("follow-btn");
   if (!btn) return;
+  
+  //block-if-not-log
+  if(!requireAuth())return;
 
   const profileId = btn.dataset.profileId;
-  if (!profileId) return;
+  const userId = Id.CURRENT_USER_ID;
+
+  if (!profileId || !userId) {
+    console.error(" Missing profileId or userId", { profileId, userId });
+    return;
+  }
 
   const isFollowing = btn.dataset.following === "true";
 
-  console.log("dataset:", btn.dataset);
+  console.log(" Follow Action:", {
+    profileId,
+    userId,
+    isFollowing
+  });
 
   const countEl = document.getElementById("followerCount");
   if (!countEl) return;
@@ -275,11 +274,18 @@ document.getElementById("follow-btn")
 
     if (isFollowing) {
 
-      await supabaseClient
+      const { error } = await supabaseClient
         .from("followers")
         .delete()
-        .eq("follower_id", Id.CURRENT_USER_ID)
+        .eq("follower_id", userId)
         .eq("following_id", profileId);
+
+      if (error) {
+        console.error(" DELETE ERROR:", error);
+        throw error;
+      }
+
+      console.log(" Unfollow success");
 
       btn.textContent = "Follow";
       btn.dataset.following = "false";
@@ -289,12 +295,19 @@ document.getElementById("follow-btn")
 
     } else {
 
-      await supabaseClient
+      const { error } = await supabaseClient
         .from("followers")
         .insert({
-          follower_id: Id.CURRENT_USER_ID,
+          follower_id: userId,
           following_id: profileId
         });
+
+      if (error) {
+        console.error("INSERT ERROR:", error);
+        throw error;
+      }
+
+      console.log(" Follow success");
 
       btn.textContent = "Following";
       btn.dataset.following = "true";
@@ -305,12 +318,18 @@ document.getElementById("follow-btn")
 
   } catch (err) {
 
-    console.error(err);
+    console.error(" FOLLOW SYSTEM FAILED:", {
+      message: err.message,
+      details: err.details,
+      hint: err.hint,
+      code: err.code
+    });
 
-    // revert UI
+    //  revert UI
     btn.dataset.following = isFollowing ? "true" : "false";
     btn.textContent = isFollowing ? "Following" : "Follow";
     countEl.innerText = count;
+
   }
 
   btn.style.pointerEvents = "auto";
@@ -351,12 +370,12 @@ document.getElementById("follow-btn").addEventListener("click", async () => {
     btn.textContent = "Following";
     btn.dataset.following = "true";
   }
+  
 
   // refresh follower count
   updateFollowerCount(profileId);
-
-});*/
-
+}
+*/
 //render-Profile
 
 

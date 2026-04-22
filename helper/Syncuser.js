@@ -58,8 +58,37 @@ export async function syncUserProfile(user) {
 export function initSetupProfile() {
 
   console.log("SetupProfile init");
-  
-  //login-logic
+
+  // ================= PREVIEW LOGIC =================
+
+  const input = document.getElementById("avatarInput");
+  const preview = document.getElementById("avatarPreview");
+
+  if (input && preview) {
+
+    input.addEventListener("change", () => {
+
+      const file = input.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        alert("Upload valid image ");
+        input.value = "";
+        return;
+      }
+
+      const url = URL.createObjectURL(file);
+      preview.src = url;
+      
+      console.log(file);
+
+      console.log("Avatar preview updated");
+    });
+
+  }
+
+  // ================= SAVE PROFILE =================
+
   document.addEventListener("click", async (e) => {
 
     if (e.target.id === "saveProfileBtn") {
@@ -74,7 +103,14 @@ export function initSetupProfile() {
         return;
       }
 
-      let avatarUrl = "default.png";
+      const userId = Id.CURRENT_USER_ID;
+
+      if (!userId) {
+        console.error("User not logged in ");
+        return;
+      }
+
+      let avatarUrl = "./Assets/user-fill.svg";
 
       try {
 
@@ -86,7 +122,7 @@ export function initSetupProfile() {
             return;
           }
 
-          const fileName = `${Id.CURRENT_USER_ID}_${Date.now()}`;
+          const fileName = `${userId}_${Date.now()}`;
 
           const { error: uploadError } = await supabaseClient
             .storage
@@ -106,11 +142,11 @@ export function initSetupProfile() {
           avatarUrl = data.publicUrl;
         }
 
-        //  SAVE PROFILE (USE UPSERT)
+        //  SAVE PROFILE
         const { error } = await supabaseClient
           .from("profiles")
           .upsert({
-            id: Id.CURRENT_USER_ID,
+            id: userId,
             username,
             avatar_url: avatarUrl
           }, {
@@ -127,38 +163,36 @@ export function initSetupProfile() {
         navigate("flashcards");
 
       } catch (err) {
-        console.error(err);
+        console.error("Setup error :", err);
       }
     }
 
   });
-  
-  
-  //cancel-logic
+
+  // ================= CANCEL =================
+
   document.getElementById("cancelSetupBtn")
   ?.addEventListener("click", async () => {
 
-  console.log("Cancel setup → logout");
+    console.log("Cancel setup → logout");
 
-  try {
+    try {
 
-    // logout user
-    await signOut(auth);
+      await signOut(auth);
 
-    // clear state
-    Id.CURRENT_USER_ID = null;
-    Id.CURRENT_USER = null;
+      Id.CURRENT_USER_ID = null;
+      Id.CURRENT_USER = null;
 
-    // go back to login
-    navigate("login");
+      navigate("login");
 
-  } catch (err) {
-    console.error(err);
-  }
+    } catch (err) {
+      console.error(err);
+    }
 
-});
+  });
 
 }
+
 
 
 export function requireAuth() {

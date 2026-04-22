@@ -23,6 +23,7 @@ import { navigate } from "./router.js";
 
 
 
+
 function startApp() {
 
   console.log("App starting...");
@@ -42,26 +43,28 @@ function startApp() {
 
       await syncUserProfile(user);
 
-      //  AFTER NAVIGATION → INIT SETUP PAGE
+      // setup profile page init
       setTimeout(() => {
         initSetupProfile();
       }, 200);
 
-      if (!initialized) {
-        initialized = true;
-
-        initProfile();
-        initVideoFeed();
-        initVoiceRooms();
-      }
-
     } else {
 
-      console.log("No user");
-      Id.CURRENT_USER_ID = null;
+      console.log("Guest mode");
 
-      // optional
-      navigate("login");
+      Id.CURRENT_USER_ID = null;
+    }
+
+    //  IMPORTANT: INIT APP FOR BOTH (user + guest)
+    if (!initialized) {
+      initialized = true;
+
+      initProfile();
+      initVideoFeed();
+      initVoiceRooms();
+
+      //  DEFAULT PAGE
+      navigate("flashcards");
     }
 
   });

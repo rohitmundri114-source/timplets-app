@@ -17,7 +17,7 @@ import {
   writeBatch,
   onSnapshot
 } from "../../services/firebase.js";
-import { stopAllVideos } from "../../helper/Syncuser.js";
+import { stopAllVideos,requireAuth } from "../../helper/Syncuser.js";
 import { supabaseClient } from "../../services/supabase.js";
 import { Joinvoicechannel, leaveVoicechannel, updateMicUI } from "../../services/agora.js"; 
 
@@ -86,6 +86,14 @@ let isVoiceInitialized = false;
 
 async function createRoom() {
 
+  //block-if-not-log
+  if(!requireAuth()){
+    
+    //hide-UI
+    hideCreateUI();
+    
+    return;
+  };
   
   Voice.isRoomAdmin = true;
 
@@ -171,61 +179,7 @@ function loadRooms() {
 
 /*********JOINING-FTN***********/
 
-/*async function joinRoomAsAdmin(roomId) {
 
-  Voice.currentRoomId = roomId;
-  Voice.isRoomAdmin = true;
-  
-  console.log("ROOM ID:", roomId);
-
-
-  try {
-
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("username, avatar_url")
-      .eq("id", CURRENT_USER_ID)
-      .single();
-
-    const name = profile?.username || "User";
-    const avatarUrl = profile?.avatar_url || null;
-
-   //firebase
-    await setDoc(
-    doc(db, "rooms", roomId, "users", CURRENT_USER_ID),
-  {
-    name,
-    avatarUrl,
-    role: "admin",
-    joinedAt: serverTimestamp()
-  }
-);
-
-
-    //  SHOW UI FIRST
-    roomUI();
-
-    document.getElementById("requestPanel")?.classList.add("hidden");
-    document.getElementById("raiseHandBtn")?.classList.add("hidden");
-
-    //  START AGORA 
-    Joinvoicechannel(roomId).catch(err => {
-      console.error("Agora join failed:", err);
-    });
-    
-    Voice.chatUnsub = listenMessages(roomId);
-
-    listenForRequests(roomId);
-
-    Voice.unsubscribeRoom = listeners(roomId);
-    Voice.roomDeleteUnsub = watchRoomDeletion(roomId);
-
-  } catch (err) {
-    console.error(err);
-  }
-
-  console.log("joinRoomAsAdmin");
-}*/
 
 async function joinRoomAsAdmin(roomId) {
 
@@ -286,33 +240,35 @@ async function joinRoomAsAdmin(roomId) {
 
 
 async function joinRoom(docId) {
+  
+  //if(!requireAuth()) return;
 
   Voice.isRoomAdmin = false;
 
-  // ⭐ prevent rejoin
+  //  prevent rejoin
   if (Voice.currentRoomId === docId) return;
 
-  // ⭐ cleanup previous listeners
+  //  cleanup previous listeners
   if (Voice.unsubscribeRoom) Voice.unsubscribeRoom();
   if (Voice.roomDeleteUnsub) Voice .roomDeleteUnsub();
 
-  // ⭐ cleanup previous voice (NEW)
+  //  cleanup previous voice (NEW)
   await leaveVoicechannel();
 
   Voice.currentRoomId = docId;
 
   try {
 
-    // ⭐ ensure participant
+    //  ensure participant
     await ensureUserJoined(docId);
 
-    // ⭐ load metadata
+    //  load metadata
     await roomData(docId);
 
-    // ⭐ JOIN VOICE (FIXED)
+    //  JOIN VOICE (FIXED)
     await Joinvoicechannel(docId);
 
-    // ⭐ show UI
+    //  show UI
     roomUI();
     
     //raise-Hand
@@ -320,11 +276,11 @@ async function joinRoom(docId) {
   document.getElementById("raiseHandBtn").classList.remove("hidden");
 }
 
-    // ⭐ listeners
+    //  listeners
     Voice.unsubscribeRoom = listeners(docId);
     Voice.roomDeleteUnsub = watchRoomDeletion(docId);
 
-    // ⭐ pause feed
+    //  pause feed
     stopAllVideos?.();
 
   } catch (err) {
@@ -489,16 +445,25 @@ function resetUI() {
 /***********ROOM-DATA************/
 
 
+
 async function ensureUserJoined(roomId) {
+
+  // 🔥 capture stable userId
+  const userId = Id.CURRENT_USER_ID;
+
+  if (!roomId || !userId) {
+    console.warn("Missing roomId or userId");
+    return;
+  }
 
   try {
 
-    const userRef = doc(db, "rooms", roomId, "users", CURRENT_USER_ID);
+    const userRef = doc(db, "rooms", roomId, "users", userId);
 
     const { data: profile, error } = await supabaseClient
       .from("profiles")
       .select("username, avatar_url")
-      .eq("id", CURRENT_USER_ID)
+      .eq("id", userId)
       .maybeSingle();
 
     if (error) {
@@ -506,20 +471,18 @@ async function ensureUserJoined(roomId) {
       return;
     }
 
-    // STOP if no profile
-    if (!profile) {
-      console.error("No profile found ❌");
-      return;
-    }
+    // 🔥 fallback (important)
+    const username = profile?.username || "User";
+    const avatar = profile?.avatar_url || "default.png";
 
     await setDoc(userRef, {
-      name: profile.username,
-      avatarUrl: profile.avatar_url,
+      name: username,
+      avatarUrl: avatar,
       role: "listener",
       joinedAt: serverTimestamp()
     }, { merge: true });
 
-    console.log("User ensured in room ");
+    console.log("User ensured in room ✅");
 
   } catch (err) {
     console.error("ensureUserJoined error:", err);
@@ -530,7 +493,8 @@ async function ensureUserJoined(roomId) {
 async function roomData(docId) {
 
   try {
-
+ 
+ /*
     // ⭐ fetch profile
     const { data: profile, error } = await supabaseClient
       .from("profiles")
@@ -542,9 +506,10 @@ async function roomData(docId) {
       console.error("Profile fetch error:", error);
       return;
     }
+    */
 
-    const name = profile?.username || "User";
-    const avatarUrl = profile?.avatar_url || null;
+    const name = Id.CURRENT_USER?.username || "User";
+    const avatarUrl = Id.CURRENT_USER?.avatar_url || null;
 
     // ⭐ write user snapshot
     await setDoc(
@@ -567,57 +532,30 @@ async function roomData(docId) {
 
 
 
-/*
+
 async function raiseHand() {
-
-  if (!Voice.currentRoomId) return;
-
-  try {
-
-    // ⭐ fetch profile
-    const { data, error } = await supabaseClient
-      .from("profiles")
-      .select("username, avatar_url")
-      .eq("id", CURRENT_USER_ID)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Profile fetch error:", error);
-      return;
-    }
-
-    // ⭐ write request
-    await setDoc(
-      doc(db, "rooms", Voice.currentRoomId, "requests", CURRENT_USER_ID),
-      {
-        name: data?.username || "User",
-        avatarUrl: data?.avatar_url || null,
-        requestedAt: serverTimestamp()
-      },
-      { merge: true } //  avoids duplicate / overwrite crash
-    );
-
-    console.log("Hand raised");
-
-  } catch (e) {
-    console.error("raiseHand error:", e);
-  }
   
-  console.log("raiseHand")
-}*/
-
-
-async function raiseHand() {
+  //block-if-no-log
+  if(!Id.CURRENT_USER_ID){
+    alert("login to message")
+  } return;
 
   if (!Voice.currentRoomId) return;
+
+  const userId = Id.CURRENT_USER_ID;
+
+  if (!userId) {
+    console.warn("User missing");
+    return;
+  }
 
   try {
 
     await setDoc(
-      doc(db, "rooms", Voice.currentRoomId, "requests", CURRENT_USER_ID),
+      doc(db, "rooms", Voice.currentRoomId, "requests", userId),
       {
         name: Id.CURRENT_USER?.username || "User",
-        avatarUrl: Id.CURRENT_USER?.avatar_url || null,
+        avatarUrl: Id.CURRENT_USER?.avatar_url || "default.png",
         requestedAt: serverTimestamp()
       },
       { merge: true }
@@ -629,6 +567,7 @@ async function raiseHand() {
     console.error("raiseHand error:", e);
   }
 }
+
 
 
 function listenForRequests(roomId) {
@@ -681,73 +620,8 @@ function listenForRequests(roomId) {
   console.log("Request listener started 🔥");
 }
 
-/*
-function listenForRequests(roomId) {
-
-  const panel = document.getElementById("requestPanel");
-  if (!panel) return;
-
-  //  cleanup old listener if exists
-  Voice.unsubscribeRequests?.();
-
-  //  new realtime listener
-  Voice.unsubscribeRequests = onSnapshot(
-    collection(db, "rooms", roomId, "requests"),
-    (snapshot) => {
-
-      panel.innerHTML = "";
-
-      snapshot.forEach((docSnap) => {
-
-        const data = docSnap.data();
-        const uid = docSnap.id;
-
-        const item = document.createElement("div");
-        item.className = "request-item";
-
-        item.innerHTML = `
-          <img src="${data.avatarUrl || 'default.png'}">
-          <span>${data.name}</span>
-          <button class="approve">Accept</button>
-        `;
-
-        item.querySelector(".approve")
-          .onclick = () => approveRequest(uid);
-
-        panel.appendChild(item);
-      });
-
-    }
-  );
-  console.log("panel")
-}*/
 
 
-/*
-async function approveRequest(uid) {
-
-  try {
-
-    const roomId = Voice.currentRoomId;
-
-    // ⭐ promote to speaker
-    await updateDoc(
-      doc(db, "rooms", roomId, "users", uid),
-      { role: "speaker" }
-    );
-
-    // ⭐ remove request
-    await deleteDoc(
-      doc(db, "rooms", roomId, "requests", uid)
-    );
-
-    console.log("Approved");
-
-  } catch (e) {
-    console.error("approveRequest error:", e);
-  }
-  console.log("request")
-}*/
 
 async function approveRequest(uid) {
 
@@ -944,11 +818,13 @@ async function leaveroom() {
 
     // show message
     showmessage("You", "left the room", null, "leave");
+    
+    const currentId = Id.CURRENT_USER_ID
 
     // SAFE Firestore delete
-    if (CURRENT_USER_ID) {
+    if (currentId) {
       await deleteDoc(
-        doc(db, "rooms", roomId, "users", CURRENT_USER_ID)
+        doc(db, "rooms", roomId, "users", currentId)
       );
     } else {
       console.warn("User ID missing during leave");
@@ -1114,53 +990,15 @@ async function adminLeaveRoom(roomId) {
  
  
  
- 
-/*
-async function sendMessage(roomId, text) {
-
-  if (!text || !text.trim()) return;
-
-  try {
-
-    //  USE CACHE (VERY IMPORTANT)
-    let username = Cache.currentUsername;
-
-    if (!username) {
-      const { data, error } = await supabaseClient
-        .from("profiles")
-        .select("username")
-        .eq("id", Id.CURRENT_USER_ID)
-        .single();
-
-      if (error) {
-        console.error("Profile fetch error:", error);
-      }
-
-      username = data?.username || "User";
-
-      //  SAVE IN CACHE
-      Cache.currentUsername = username;
-    }
-
-    // ⭐ send message
-    await addDoc(
-      collection(db, "rooms", roomId, "messages"),
-      {
-        text: text.trim(),
-        userId: Id.CURRENT_USER_ID,
-        username,
-        createdAt: serverTimestamp()
-      }
-    );
-
-  } catch (err) {
-    console.error("Send message error:", err);
-  }
-}*/
 
 
 
 async function sendMessage(roomId, text) {
+  
+  if(!Id.CURRENT_USER_ID){
+    alert("login to message")
+    return;
+  } 
 
   if (!text || !text.trim()) return;
 
@@ -1382,7 +1220,7 @@ document.getElementById("cancelLeave")
 
  const Confirmleave = document.getElementById("confirmLeave")
  
-Confirmleave?.addEventListener("click", () => {
+ Confirmleave?.addEventListener("click", () => {
   exitRoom();
   console.log("exit-room")
 });

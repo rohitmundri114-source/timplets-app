@@ -35,7 +35,7 @@ export function initAgoraUI() {
 /***********************
     GLOBAL STATE
 ***********************/
-const APP_ID = "c0aaefec9bad469eaa9f3d5562bf8dc0"; // dummy
+const APP_ID = "c0aaefec9bad469eaa9f3d5562bf8dc0"; 
 
 let client = null;
 let localAudioTrack = null;
@@ -48,7 +48,7 @@ let isMuted = false;
 export async function Joinvoicechannel(docId) {
 
   if (!window.AgoraRTC) {
-    console.error("Agora SDK not loaded ❌");
+    console.error("Agora SDK not loaded ");
     return;
   }
 

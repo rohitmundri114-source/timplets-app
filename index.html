@@ -260,16 +260,22 @@
   <section id="setupProfile" class="page">
   <div class="setup-container">
 
-    <h2 class="title">Create Your Profile</h2>
-
-    <!-- Avatar Upload -->
+  <h2 class="title">Create Your Profile</h2>
+  
+    <!--Avatar-Upload-->
     <div class="avatar-upload">
-      <label for="avatarInput" class="avatar-circle">
-        <span>+</span>
-      </label>
-      <input type="file" id="avatarInput" accept="image/*" hidden>
-      <p class="upload-text">Upload Photo</p>
-    </div>
+  <label for="avatarInput" class="avatar-circle">
+    <img id="avatarPreview" src="Assets/user-fill.svg"/>
+     
+  </label>
+  
+   <div class="plus">+</div>
+    
+
+  <input type="file" id="avatarInput" accept="image/*" hidden>
+
+  <p class="upload-text">Upload Photo</p>
+</div>
 
     <!-- Inputs -->
     <input id="usernameInput" class="input" placeholder="@username">

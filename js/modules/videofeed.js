@@ -72,7 +72,7 @@ function createSentinel(){
 
  async function loadVideoFeed(){
   
-  //if(Dev) return;
+  if(Dev) return;
 
   if(isLoading || !hasMore) return;
 
