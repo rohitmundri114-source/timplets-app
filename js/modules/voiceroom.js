@@ -110,7 +110,7 @@ async function createRoom() {
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("avatar_url")
-      .eq("id", CURRENT_USER_ID)
+      .eq("id", Id.CURRENT_USER_ID)
       .single();
 
     const avatarUrl = profile?.avatar_url || null;
@@ -119,7 +119,7 @@ async function createRoom() {
   
     const docRef = await addDoc(collection(db, "rooms"), {
   name: UserInput,
-  createdBy: CURRENT_USER_ID,
+  createdBy: Id.CURRENT_USER_ID,
   adminAvatar: avatarUrl,
   createdAt: serverTimestamp()
 });
@@ -448,7 +448,7 @@ function resetUI() {
 
 async function ensureUserJoined(roomId) {
 
-  // 🔥 capture stable userId
+  //  capture stable userId
   const userId = Id.CURRENT_USER_ID;
 
   if (!roomId || !userId) {
@@ -471,7 +471,7 @@ async function ensureUserJoined(roomId) {
       return;
     }
 
-    // 🔥 fallback (important)
+    //  fallback (important)
     const username = profile?.username || "User";
     const avatar = profile?.avatar_url || "default.png";
 
@@ -482,7 +482,7 @@ async function ensureUserJoined(roomId) {
       joinedAt: serverTimestamp()
     }, { merge: true });
 
-    console.log("User ensured in room ✅");
+    console.log("User ensured in room ");
 
   } catch (err) {
     console.error("ensureUserJoined error:", err);

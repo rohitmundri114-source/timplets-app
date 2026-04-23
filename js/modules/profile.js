@@ -17,6 +17,8 @@ export function initProfile(){
     console.log("Logout clicked");
 
     await logout();
+    navigate("login");
+    return;
   }
 
 });

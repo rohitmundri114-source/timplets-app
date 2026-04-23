@@ -6,6 +6,8 @@ import {
   test
 } from "../../services/auth.js"
 
+import {navigate} from "../router.js";
+
 
 
 
@@ -19,12 +21,16 @@ export function initLoginPage() {
   if (googleBtn) {
     googleBtn.onclick = async () => {
       await loginWithGoogle();
+      navigate("flashcards")
+      return;
     };
   }
 
   if (guestBtn) {
     guestBtn.onclick = async () => {
       await loginAsGuest();
+      navigate("flashcards")
+      return;
     };
   }
 }
