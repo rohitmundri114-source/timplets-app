@@ -511,7 +511,7 @@ async function roomData(docId) {
     const name = Id.CURRENT_USER?.username || "User";
     const avatarUrl = Id.CURRENT_USER?.avatar_url || null;
 
-    // ⭐ write user snapshot
+    // write user snapshot
     await setDoc(
       doc(db, "rooms", docId, "users", CURRENT_USER_ID),
       {
@@ -617,7 +617,7 @@ function listenForRequests(roomId) {
     }
   );
 
-  console.log("Request listener started 🔥");
+  console.log("Request listener started ");
 }
 
 
@@ -636,17 +636,17 @@ async function approveRequest(uid) {
 
     const userRef = doc(db, "rooms", roomId, "users", uid);
 
-    // 🔥 check if user exists
+    //  check if user exists
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
       console.warn("User not in room, skipping promote");
     } else {
-      // ⭐ promote to speaker
+      //  promote to speaker
       await updateDoc(userRef, { role: "speaker" });
     }
 
-    // ⭐ remove request ALWAYS
+    //  remove request ALWAYS
     await deleteDoc(
       doc(db, "rooms", roomId, "requests", uid)
     );
@@ -673,7 +673,7 @@ function listeners(docId) {
         const id = change.doc.id;
         const avatar = data?.avatarUrl || "default.png";
 
-        // ⭐ store UID WITH data
+        //  store UID WITH data
         if (change.type === "added") {
           participants.set(id, {
             uid: id,
@@ -685,7 +685,7 @@ function listeners(docId) {
           participants.delete(id);
         }
 
-        // ⭐ join/leave messages (skip initial load)
+        //  join/leave messages (skip initial load)
         if (!Voice.initialLoad) {
 
           if (change.type === "added") {
@@ -698,10 +698,10 @@ function listeners(docId) {
         }
       });
 
-      // ⭐ render UI
+      // render UI
       renderParticipants(Array.from(participants.values()));
 
-      // ⭐ mark initial load done
+      //  mark initial load done
       Voice.initialLoad = false;
     }
   );
@@ -713,14 +713,14 @@ function renderParticipants(users) {
 
   const slots = document.querySelectorAll(".avatar");
 
-  // ⭐ clear all
+  //  clear all
   slots.forEach(slot => {
     slot.innerHTML = "";
     slot.style.backgroundImage = "";
     slot.dataset.uid = "";
   });
 
-  // ⭐ ORDER USERS (THIS IS THE NEW PART)
+  //  ORDER USERS (THIS IS THE NEW PART)
 
   const stageUsers = users.filter(
     u => u.role === "admin" || u.role === "speaker"
@@ -734,14 +734,14 @@ function renderParticipants(users) {
 
   console.log("orderedUsers:", orderedUsers);
 
-  // ⭐ fill slots
+  // fill slots
   orderedUsers.forEach((user, index) => {
 
     if (index >= slots.length) return;
 
     const slot = slots[index];
 
-    // ⭐ speaking detection mapping
+    //  speaking detection mapping
     slot.dataset.uid = user.uid || user.id;
 
     if (user.avatarUrl) {
@@ -763,13 +763,13 @@ function watchRoomDeletion(roomId) {
     doc(db, "rooms", roomId),
     async (docSnap) => {
 
-      // 🔥 IMPORTANT: modular uses exists()
+      //  IMPORTANT: modular uses exists()
       if (!docSnap.exists()) {
 
-        // ⭐ system message
+        //  system message
         showmessage("System", "room ended", null, "leave");
 
-        // ⭐ cleanup listeners
+        //  cleanup listeners
         Voice.unsubscribeRoom?.();
         Voice.roomDeleteUnsub?.();
         Voice.unsubscribeRequests?.();
@@ -779,7 +779,7 @@ function watchRoomDeletion(roomId) {
         Voice.unsubscribeRequests = null;
 
         try {
-          // ⭐ remove self (optional)
+          //  remove self (optional)
           await deleteDoc(
             doc(db, "rooms", roomId, "users", CURRENT_USER_ID)
           );
@@ -787,7 +787,7 @@ function watchRoomDeletion(roomId) {
           // ignore if already deleted
         }
 
-        // ⭐ reset UI
+        //  reset UI
         setTimeout(() => {
           resetUI();
         }, 1500);
@@ -887,19 +887,19 @@ async function adminLeaveRoom(roomId) {
 
   try {
 
-    //  prevent double execution
+    //prevent double execution
     if (Voice.isLeaving) return;
     Voice.isLeaving = true;
 
-    // ⭐ leave voice FIRST
+    // leave voice FIRST
     await leaveVoicechannel();
 
-    // ⭐ UX message
+    //  UX message
     showmessage("You", "ended the room", null, "leave");
 
     const roomRef = doc(db, "rooms", roomId);
 
-    // ⭐ get collections
+    //  get collections
     const usersSnap = await getDocs(
       collection(db, "rooms", roomId, "users")
     );
@@ -912,7 +912,7 @@ async function adminLeaveRoom(roomId) {
       collection(db, "rooms", roomId, "messages")
     );
 
-    // ⭐ batch delete
+    // batch delete
     const batch = writeBatch(db);
 
     usersSnap.forEach(d => batch.delete(d.ref));
@@ -927,10 +927,10 @@ async function adminLeaveRoom(roomId) {
 
   } catch (err) {
     console.error("adminLeaveRoom error:", err);
-    return; // ❌ stop cleanup if failed
+    return; //  stop cleanup if failed
   }
 
-  // ⭐ CLEANUP LISTENERS
+  // CLEANUP LISTENERS
   Voice.unsubscribeRoom?.();
   Voice.roomDeleteUnsub?.();
   Voice.unsubscribeRequests?.();
@@ -941,31 +941,31 @@ async function adminLeaveRoom(roomId) {
   Voice.unsubscribeRequests = null;
   Voice.unsubscribeMessages = null;
 
-  // 🔥 CLEAN CARD LISTENERS
+  //  CLEAN CARD LISTENERS
   if (Voice.cardListeners) {
     Voice.cardListeners.forEach(unsub => unsub());
     Voice.cardListeners = [];
   }
 
-  // ⭐ RESET STATE
+  //  RESET STATE
   Voice.currentRoomId = null;
   Voice.isRoomAdmin = false;
   Voice.isLeaving = false;
 
-  // 🔥 CLEAR UI (SAFE)
+  //  CLEAR UI (SAFE)
   const msgEl = document.getElementById("room-messages");
   const reqEl = document.getElementById("requestPanel");
 
   if (msgEl) msgEl.innerHTML = "";
   if (reqEl) reqEl.innerHTML = "";
 
-  // 🔥 CLEAR MEMORY
+  //  CLEAR MEMORY
   participants.clear();
 
   Voice.initialLoad = true;
   Voice.roomEnded = false;
 
-  // ⭐ RESET UI
+  //  RESET UI
   setTimeout(() => {
     resetUI();
   }, 800);
