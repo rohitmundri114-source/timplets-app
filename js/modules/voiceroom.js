@@ -1044,11 +1044,12 @@ async function sendMessage(roomId, text) {
 
 
 
+
 function listenMessages(roomId) {
 
   const q = query(
     collection(db, "rooms", roomId, "messages"),
-    orderBy("createdAt", "desc"),
+    orderBy("createdAt", "asc"), //  FIX
     limit(50)
   );
 
@@ -1057,16 +1058,15 @@ function listenMessages(roomId) {
     const container = document.getElementById("room-messages");
     if (!container) return;
 
-    snapshot.docChanges().forEach(change => {
+    container.innerHTML = ""; //  RESET
 
-      if (change.type === "added") {
-
-        const msg = change.doc.data();
-
-        renderMessage(msg);
-      }
-
+    snapshot.forEach(doc => {
+      const msg = doc.data();
+      renderMessage(msg);
     });
+
+    // auto scroll
+    container.scrollTop = container.scrollHeight;
 
   });
 }
