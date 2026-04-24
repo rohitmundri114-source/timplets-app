@@ -490,37 +490,23 @@ async function ensureUserJoined(roomId) {
 }
 
 
+
 async function roomData(docId) {
 
   try {
- 
- /*
-    // ⭐ fetch profile
-    const { data: profile, error } = await supabaseClient
-      .from("profiles")
-      .select("username, avatar_url")
-      .eq("id", CURRENT_USER_ID)
-      .single();
-
-    if (error) {
-      console.error("Profile fetch error:", error);
-      return;
-    }
-    */
 
     const name = Id.CURRENT_USER?.username || "User";
     const avatarUrl = Id.CURRENT_USER?.avatar_url || null;
 
-    // write user snapshot
     await setDoc(
-      doc(db, "rooms", docId, "users", CURRENT_USER_ID),
+      doc(db, "rooms", docId, "users", Id.CURRENT_USER_ID), //  FIX
       {
         name,
         avatarUrl,
         role: "audience",
         joinedAt: serverTimestamp()
       },
-      { merge: true } //  prevents overwrite issues
+      { merge: true }
     );
 
     console.log("room-Data");
@@ -1049,8 +1035,7 @@ function listenMessages(roomId) {
 
   const q = query(
     collection(db, "rooms", roomId, "messages"),
-    orderBy("createdAt", "asc"), //  FIX
-    limit(50)
+    orderBy("createdAt", "asc")
   );
 
   return onSnapshot(q, (snapshot) => {
@@ -1058,14 +1043,13 @@ function listenMessages(roomId) {
     const container = document.getElementById("room-messages");
     if (!container) return;
 
-    container.innerHTML = ""; //  RESET
+    container.innerHTML = "";
 
     snapshot.forEach(doc => {
       const msg = doc.data();
       renderMessage(msg);
     });
 
-    // auto scroll
     container.scrollTop = container.scrollHeight;
 
   });
