@@ -238,7 +238,7 @@ async function joinRoomAsAdmin(roomId) {
 }
 
 
-
+/*
 async function joinRoom(docId) {
   
   //if(!requireAuth()) return;
@@ -264,6 +264,7 @@ async function joinRoom(docId) {
 
     //  load metadata
     await roomData(docId);
+    Voice.isReady= true;
 
     //  JOIN VOICE (FIXED)
     await Joinvoicechannel(docId);
@@ -288,9 +289,63 @@ async function joinRoom(docId) {
   }
 
   console.log("joinroom-Worked");
+}*/
+
+async function joinRoom(docId) {
+  
+  // prevent rejoin
+  if (Voice.currentRoomId === docId) return;
+
+  Voice.isRoomAdmin = false;
+  Voice.isReady = false; // 🔥 reset state
+
+  // cleanup previous listeners
+  Voice.unsubscribeRoom?.();
+  Voice.roomDeleteUnsub?.();
+  Voice.unsubscribeMessages?.(); // 🔥 ADD THIS
+
+  // cleanup previous voice
+  await leaveVoicechannel();
+
+  Voice.currentRoomId = docId;
+
+  try {
+
+    // 🔥 STEP 1: ensure user exists in room
+    await ensureUserJoined(docId);
+
+    // 🔥 STEP 2: write/update user data
+    await roomData(docId);
+
+    // 🔥 STEP 3: start listeners BEFORE UI (important)
+    Voice.unsubscribeMessages = listenMessages(docId); // ✅ ADD THIS
+    Voice.unsubscribeRoom = listeners(docId);
+    Voice.roomDeleteUnsub = watchRoomDeletion(docId);
+
+    // 🔥 STEP 4: join voice
+    await Joinvoicechannel(docId);
+
+    // 🔥 STEP 5: show UI
+    roomUI();
+
+    // 🔥 STEP 6: show raise hand
+    if (!Voice.isRoomAdmin) {
+      document.getElementById("raiseHandBtn")?.classList.remove("hidden");
+    }
+
+    // 🔥 STEP 7: mark ready (LAST)
+    Voice.isReady = true;
+
+    // pause feed
+    stopAllVideos?.();
+
+  } catch (err) {
+    console.error("joinRoom error:", err);
+    Voice.isReady = false;
+  }
+
+  console.log("joinroom-Worked");
 }
-
-
 
 
 /******************************
@@ -691,6 +746,8 @@ function listeners(docId) {
       Voice.initialLoad = false;
     }
   );
+  console.log("Snapshot size:", snapshot.size);
+ console.log("Message:", msg.text, msg.userId);
 }
 
 
@@ -981,10 +1038,11 @@ async function adminLeaveRoom(roomId) {
 
 async function sendMessage(roomId, text) {
   
-  if(!Id.CURRENT_USER_ID){
-    alert("login to message")
-    return;
-  } 
+  //Guard
+  if (!Voice.isReady) {
+  console.log("User not ready yet");
+  return;
+}
 
   if (!text || !text.trim()) return;
 
