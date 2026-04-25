@@ -246,6 +246,9 @@ async function joinRoomAsAdmin(roomId) {
 
 async function joinRoom(docId) {
   
+  //clearing-old-data.
+  participants.clear();
+  
   // prevent rejoin
   if (Voice.currentRoomId === docId) return;
 
@@ -712,25 +715,31 @@ function listeners(docId) {
 
 
 
+
 function renderParticipants(users) {
 
   const slots = document.querySelectorAll(".avatar");
 
-  //  clear all
+  // clear all
   slots.forEach(slot => {
     slot.innerHTML = "";
     slot.style.backgroundImage = "";
     slot.dataset.uid = "";
   });
 
-  //  ORDER USERS 
+  //  NORMALIZE ROLE
+  const normalizedUsers = users.map(u => ({
+    ...u,
+    role: u.role || "audience" // default
+  }));
 
-  const stageUsers = users.filter(
+  //  STRICT FILTERING
+  const stageUsers = normalizedUsers.filter(
     u => u.role === "admin" || u.role === "speaker"
   );
 
-  const audienceUsers = users.filter(
-    u => !u.role || u.role === "audience"
+  const audienceUsers = normalizedUsers.filter(
+    u => u.role === "audience"
   );
 
   const orderedUsers = [...stageUsers, ...audienceUsers];
@@ -744,7 +753,6 @@ function renderParticipants(users) {
 
     const slot = slots[index];
 
-    //  speaking detection mapping
     slot.dataset.uid = user.uid || user.id;
 
     if (user.avatarUrl) {
@@ -754,6 +762,7 @@ function renderParticipants(users) {
     } else {
       slot.textContent = user.name?.[0] || "U";
     }
+
   });
 }
 
