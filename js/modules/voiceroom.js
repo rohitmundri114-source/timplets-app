@@ -46,16 +46,21 @@ export function initVoiceRooms(){
   if (raiseBtn) {
     raiseBtn.addEventListener("click", raiseHand);
   }
+  
+  //Open-panel.
+  document.getElementById("requestBtn")
+  ?.addEventListener("click", openRequestPanel);
+  
+  //Hide-panel.
+  document.getElementById("blurOverlay")
+  .addEventListener("click", () => {
 
-  const requestBtn = document.getElementById("requestBtn");
+    document.getElementById("requestPanel").classList.add("hidden");
+    document.getElementById("blurOverlay").classList.add("hidden");
 
-  if (requestBtn) {
-    requestBtn.addEventListener("click", () => {
-      document.getElementById("requestPanel")
-        ?.classList.toggle("hidden");
-    });
-  }
-
+  });
+  
+  //Loadrooms
   loadRooms()
 
 }
@@ -106,7 +111,7 @@ async function createRoom() {
 
   try {
 
-    // ⭐ fetch avatar from Supabase profile
+    //  fetch avatar from Supabase profile
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("avatar_url")
@@ -115,7 +120,7 @@ async function createRoom() {
 
     const avatarUrl = profile?.avatar_url || null;
 
-    // ⭐ create firebase room
+    //  create firebase room
   
     const docRef = await addDoc(collection(db, "rooms"), {
   name: UserInput,
@@ -190,7 +195,7 @@ async function joinRoomAsAdmin(roomId) {
   console.log("USER ID:", Id.CURRENT_USER_ID);
 
   if (!Id.CURRENT_USER_ID) {
-    console.error("User not logged in ❌");
+    console.error("User not logged in");
     return;
   }
 
@@ -238,58 +243,6 @@ async function joinRoomAsAdmin(roomId) {
 }
 
 
-/*
-async function joinRoom(docId) {
-  
-  //if(!requireAuth()) return;
-
-  Voice.isRoomAdmin = false;
-
-  //  prevent rejoin
-  if (Voice.currentRoomId === docId) return;
-
-  //  cleanup previous listeners
-  if (Voice.unsubscribeRoom) Voice.unsubscribeRoom();
-  if (Voice.roomDeleteUnsub) Voice .roomDeleteUnsub();
-
-  //  cleanup previous voice (NEW)
-  await leaveVoicechannel();
-
-  Voice.currentRoomId = docId;
-
-  try {
-
-    //  ensure participant
-    await ensureUserJoined(docId);
-
-    //  load metadata
-    await roomData(docId);
-    Voice.isReady= true;
-
-    //  JOIN VOICE (FIXED)
-    await Joinvoicechannel(docId);
-
-    //  show UI
-    roomUI();
-    
-    //raise-Hand
-    if (!Voice.isRoomAdmin) {
-  document.getElementById("raiseHandBtn").classList.remove("hidden");
-}
-
-    //  listeners
-    Voice.unsubscribeRoom = listeners(docId);
-    Voice.roomDeleteUnsub = watchRoomDeletion(docId);
-
-    //  pause feed
-    stopAllVideos?.();
-
-  } catch (err) {
-    console.error(err);
-  }
-
-  console.log("joinroom-Worked");
-}*/
 
 async function joinRoom(docId) {
   
@@ -297,12 +250,12 @@ async function joinRoom(docId) {
   if (Voice.currentRoomId === docId) return;
 
   Voice.isRoomAdmin = false;
-  Voice.isReady = false; // 🔥 reset state
+  Voice.isReady = false; //  reset state
 
   // cleanup previous listeners
   Voice.unsubscribeRoom?.();
   Voice.roomDeleteUnsub?.();
-  Voice.unsubscribeMessages?.(); // 🔥 ADD THIS
+  Voice.unsubscribeMessages?.(); // ADD THIS
 
   // cleanup previous voice
   await leaveVoicechannel();
@@ -311,32 +264,32 @@ async function joinRoom(docId) {
 
   try {
 
-    // 🔥 STEP 1: ensure user exists in room
+    //Ensure user exists in room
     await ensureUserJoined(docId);
 
-    // 🔥 STEP 2: write/update user data
+    //Write/update user data
     await roomData(docId);
 
-    // 🔥 STEP 3: start listeners BEFORE UI (important)
-    Voice.unsubscribeMessages = listenMessages(docId); // ✅ ADD THIS
+    //Start listeners BEFORE UI (important)
+    Voice.unsubscribeMessages = listenMessages(docId); // ADD THIS
     Voice.unsubscribeRoom = listeners(docId);
     Voice.roomDeleteUnsub = watchRoomDeletion(docId);
 
-    // 🔥 STEP 4: join voice
+    //Join voice
     await Joinvoicechannel(docId);
 
-    // 🔥 STEP 5: show UI
+    //Show UI
     roomUI();
 
-    // 🔥 STEP 6: show raise hand
+    //Show raise hand
     if (!Voice.isRoomAdmin) {
       document.getElementById("raiseHandBtn")?.classList.remove("hidden");
     }
 
-    // 🔥 STEP 7: mark ready (LAST)
+    //Mark ready (LAST)
     Voice.isReady = true;
 
-    // pause feed
+    //pause feed
     stopAllVideos?.();
 
   } catch (err) {
@@ -455,6 +408,13 @@ if (!Voice.isRoomAdmin) {
 updateMicUI(true);
 }
 
+function openRequestPanel() {
+  const panel = document.getElementById("requestPanel");
+  const overlay = document.getElementById("blurOverlay");
+
+  panel.classList.remove("hidden");
+  overlay.classList.remove("hidden");
+}
 
 function showmessage(name, actionText, avatarUrl, type = "join") {
 
@@ -533,7 +493,7 @@ async function ensureUserJoined(roomId) {
     await setDoc(userRef, {
       name: username,
       avatarUrl: avatar,
-      role: "listener",
+      role: "audience",
       joinedAt: serverTimestamp()
     }, { merge: true });
 
@@ -554,11 +514,10 @@ async function roomData(docId) {
     const avatarUrl = Id.CURRENT_USER?.avatar_url || null;
 
     await setDoc(
-      doc(db, "rooms", docId, "users", Id.CURRENT_USER_ID), //  FIX
+      doc(db, "rooms", docId, "users", Id.CURRENT_USER_ID),
       {
         name,
         avatarUrl,
-        role: "audience",
         joinedAt: serverTimestamp()
       },
       { merge: true }
@@ -579,7 +538,8 @@ async function raiseHand() {
   //block-if-no-log
   if(!Id.CURRENT_USER_ID){
     alert("login to message")
-  } return;
+    return;
+  } 
 
   if (!Voice.currentRoomId) return;
 
@@ -669,7 +629,7 @@ async function approveRequest(uid) {
   const roomId = Voice.currentRoomId;
 
   if (!roomId || !uid) {
-    console.warn("Invalid approve request data");
+    alert("Invalid approve request data");
     return;
   }
 
@@ -763,7 +723,7 @@ function renderParticipants(users) {
     slot.dataset.uid = "";
   });
 
-  //  ORDER USERS (THIS IS THE NEW PART)
+  //  ORDER USERS 
 
   const stageUsers = users.filter(
     u => u.role === "admin" || u.role === "speaker"
@@ -833,7 +793,7 @@ function watchRoomDeletion(roomId) {
         //  reset UI
         setTimeout(() => {
           resetUI();
-        }, 1500);
+        }, 1000);
       }
     }
   );
