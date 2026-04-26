@@ -663,6 +663,7 @@ async function approveRequest(uid) {
 }
 
 
+
 function listeners(docId) {
 
   console.log("listeners-Started");
@@ -677,14 +678,15 @@ function listeners(docId) {
         const id = change.doc.id;
         const avatar = data?.avatarUrl || "default.png";
 
-        //  store UID WITH data
-        if (change.type === "added") {
+        //  ADD OR UPDATE
+        if (change.type === "added" || change.type === "modified") {
           participants.set(id, {
             uid: id,
             ...data
           });
         }
 
+        //  REMOVE
         if (change.type === "removed") {
           participants.delete(id);
         }
@@ -700,40 +702,42 @@ function listeners(docId) {
             showmessage(data.name, "left the room", avatar, "leave");
           }
         }
+
       });
 
-      // render UI
+      //  render UI
       renderParticipants(Array.from(participants.values()));
 
-      //  mark initial load done
       Voice.initialLoad = false;
     }
   );
-  console.log("Snapshot size:", snapshot.size);
- console.log("Message:", msg.text, msg.userId);
 }
-
-
 
 
 function renderParticipants(users) {
 
-  const slots = document.querySelectorAll(".avatar");
+  const stageSlots = document.querySelectorAll(".avatar");
+  const audienceEl = document.getElementById("audienceArea");
 
-  // clear all
-  slots.forEach(slot => {
+  if (!audienceEl) return;
+
+  //  CLEAR STAGE
+  stageSlots.forEach(slot => {
     slot.innerHTML = "";
     slot.style.backgroundImage = "";
     slot.dataset.uid = "";
   });
 
-  //  NORMALIZE ROLE
+  //  CLEAR AUDIENCE
+  audienceEl.innerHTML = "";
+
+  // normalize roles
   const normalizedUsers = users.map(u => ({
     ...u,
-    role: u.role || "audience" // default
+    role: u.role || "audience"
   }));
 
-  //  STRICT FILTERING
+  // split users
   const stageUsers = normalizedUsers.filter(
     u => u.role === "admin" || u.role === "speaker"
   );
@@ -742,18 +746,19 @@ function renderParticipants(users) {
     u => u.role === "audience"
   );
 
-  const orderedUsers = [...stageUsers, ...audienceUsers];
+  console.log("Stage:", stageUsers);
+  console.log("Audience:", audienceUsers);
 
-  console.log("orderedUsers:", orderedUsers);
+  //  FILL STAGE (BY SLOT INDEX)
+  stageUsers.forEach((user, index) => {
 
-  // fill slots
-  orderedUsers.forEach((user, index) => {
+    const slot = document.querySelector(
+      `.avatar[data-slot="${index}"]`
+    );
 
-    if (index >= slots.length) return;
+    if (!slot) return;
 
-    const slot = slots[index];
-
-    slot.dataset.uid = user.uid || user.id;
+    slot.dataset.uid = user.uid;
 
     if (user.avatarUrl) {
       slot.style.backgroundImage = `url(${user.avatarUrl})`;
@@ -764,9 +769,25 @@ function renderParticipants(users) {
     }
 
   });
+
+  //  FILL AUDIENCE (DYNAMIC)
+  audienceUsers.forEach(user => {
+
+    const div = document.createElement("div");
+    div.className = "audience-A";
+    div.dataset.uid = user.uid;
+
+    if (user.avatarUrl) {
+      div.style.backgroundImage = `url(${user.avatarUrl})`;
+      div.style.backgroundSize = "cover";
+    } else {
+      div.textContent = user.name?.[0] || "U";
+    }
+
+    audienceEl.appendChild(div);
+  });
+
 }
-
-
 
 
 function watchRoomDeletion(roomId) {

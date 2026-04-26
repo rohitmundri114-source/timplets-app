@@ -1209,7 +1209,7 @@ font-size: 13px;
     justify-content: center;
     flex-direction: column;
     gap: 20px;
-    min-height: 250px;
+    min-height: 200px;
     width: 90%;
     background: whitesmoke;
     border-radius: 15px;
@@ -1223,8 +1223,8 @@ font-size: 13px;
 }
 
 .avatar{
-  height: 55px;
-  width: 55px;
+  height: 45px;
+  width: 45px;
   background: darkgrey;
   border-radius: 50%;
   display: flex;
@@ -1242,7 +1242,7 @@ font-size: 13px;
 
 .UI-ctrl-cont{
     width: 80%;
-    min-height: 45px;
+    min-height: 35px;
     background-color: white;
     border-radius: 10px;
     display: flex;
@@ -1291,6 +1291,32 @@ font-size: 13px;
   background: rgba(0, 0, 0, 0.3);
 
   z-index: 1000;
+}
+
+.audienceContainer{
+  width: 80%;
+  max-height: 45px;
+  margin: 0 auto;
+  background: whitesmoke;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 20px;
+  padding: 10px;
+  
+}
+
+/*.audience {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+  background: red;
+}*/
+
+.audience-A{
+  height: 30px;
+  width: 30px;
+  border-radius: 50%;
 }
 
 #raiseHandBtn{
@@ -1364,8 +1390,13 @@ font-size: 13px;
   gap: 8px;
 
   overflow-y: auto;
-
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge */
   pointer-events: auto; 
+}
+
+.messages-css::-webkit-scrollbar {
+  display: none;                /* Chrome, Safari */
 }
 
 .ri-business-card-line{
@@ -1439,7 +1470,7 @@ font-size: 13px;
   padding: 8px 12px;
   border-radius: 12px;
 
-  background: rgba(0,0,0,0.6);
+  background: #00ffcc30;
   color: white;
 
   word-break: break-word;
@@ -1450,7 +1481,6 @@ font-size: 13px;
   transform: translateY(20px) scale(0.95);
   */
 }
-
 
 /* my messages */
 
@@ -1478,7 +1508,7 @@ font-size: 13px;
 }
 
 .chat-username.me {
-  color: #00ffcc;
+  color: #4da6ff;
 }
 
 .chat-text {
