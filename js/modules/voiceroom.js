@@ -6,6 +6,7 @@ import {
   doc,
   setDoc,
   addDoc,
+  getDoc,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -632,6 +633,10 @@ async function approveRequest(uid) {
   console.log("Approve clicked", uid);
 
   const roomId = Voice.currentRoomId;
+  
+console.log("roomId:", roomId);
+console.log("userId:", uid);
+
 
   if (!roomId || !uid) {
     alert("Invalid approve request data");
@@ -643,7 +648,7 @@ async function approveRequest(uid) {
     const userRef = doc(db, "rooms", roomId, "users", uid);
 
     //  check if user exists
-    const userSnap = await getDoc(userRef);
+  const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
       console.warn("User not in room, skipping promote");
@@ -657,12 +662,14 @@ async function approveRequest(uid) {
     await deleteDoc(
       doc(db, "rooms", roomId, "requests", uid)
     );
-
+    
+    
     console.log("Approved ");
 
   } catch (e) {
-    console.error("approveRequest error:", e);
-  }
+  console.error("approveRequest error:", e);
+  console.log("STACK:", e.stack);
+}
 }
 
 

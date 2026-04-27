@@ -1399,6 +1399,12 @@ font-size: 13px;
   display: none;                /* Chrome, Safari */
 }
 
+.approve{
+  padding: 10px ;
+  background: mediumslateblue;
+  color: white;
+}
+
 .ri-business-card-line{
   font-size: 20px;
 }
