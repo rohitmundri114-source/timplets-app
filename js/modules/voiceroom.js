@@ -235,9 +235,13 @@ async function joinRoomAsAdmin(roomId) {
 
     Voice.unsubscribeRoom = listeners(roomId);
     Voice.roomDeleteUnsub = watchRoomDeletion(roomId);
+    
+    //flag
+    Voice.isReady = true;
 
   } catch (err) {
     console.error(err);
+    Voice.isReady = false;
   }
 
   console.log("joinRoomAsAdmin");

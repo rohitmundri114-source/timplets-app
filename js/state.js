@@ -28,7 +28,9 @@ unsubscribeRoom:null,
 roomDeleteUnsub:null,
 user:null,
 isRoomAdmin:false,
-initialLoad:true
+initialLoad:true,
+isReady: null
+
 };
 
 
