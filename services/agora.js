@@ -39,7 +39,7 @@ const APP_ID = "c0aaefec9bad469eaa9f3d5562bf8dc0";
 
 let client = null;
 let localAudioTrack = null;
-let isMuted = false;
+ let isMuted = Voice.isMuted;
 
 
 /***********************

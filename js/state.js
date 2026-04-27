@@ -29,7 +29,9 @@ roomDeleteUnsub:null,
 user:null,
 isRoomAdmin:false,
 initialLoad:true,
-isReady: null
+isReady: null,
+isMuted: false
+
 
 };
 

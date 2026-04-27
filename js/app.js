@@ -66,6 +66,16 @@ function startApp() {
       //  DEFAULT PAGE
       navigate("flashcards");
     }
+    
+    //Reocovering-old-session
+    setTimeout(() => {
+  const lastRoom = localStorage.getItem("lastRoomId");
+
+  if (lastRoom) {
+    console.log("Rejoining room:", lastRoom);
+    joinRoom(lastRoom);
+  }
+}, 800); 
 
   });
 

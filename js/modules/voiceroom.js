@@ -267,8 +267,11 @@ async function joinRoom(docId) {
 
   // cleanup previous voice
   await leaveVoicechannel();
-
+ 
+  
   Voice.currentRoomId = docId;
+  
+
 
   try {
 
@@ -285,6 +288,9 @@ async function joinRoom(docId) {
 
     //Join voice
     await Joinvoicechannel(docId);
+    
+    //start-presence
+    startHeartbeat()
 
     //Show UI
     roomUI();
@@ -293,7 +299,11 @@ async function joinRoom(docId) {
     if (!Voice.isRoomAdmin) {
       document.getElementById("raiseHandBtn")?.classList.remove("hidden");
     }
-
+    
+    
+    //Storing-Last-Session.
+    localStorage.setItem("last-room",docId);
+    
     //Mark ready (LAST)
     Voice.isReady = true;
 
@@ -368,11 +378,11 @@ function voicecard(docId, roomName, avatarUrl, createdBy) {
 
   Container.appendChild(card);
 
-  // ⭐ JOIN
+  //  JOIN
   card.querySelector(".join-btn")
     .addEventListener("click", () => joinRoom(docId));
 
-  // ⭐ MEMBER COUNT (MODULAR + SAFE)
+  // MEMBER COUNT (MODULAR + SAFE)
   const countEl = card.querySelector(".member-count");
 
   const unsubscribe = onSnapshot(
@@ -382,18 +392,18 @@ function voicecard(docId, roomName, avatarUrl, createdBy) {
     }
   );
 
-  // 🔥 STORE UNSUBSCRIBE (IMPORTANT)
+  //  STORE UNSUBSCRIBE (IMPORTANT)
   if (!Voice.cardListeners) Voice.cardListeners = [];
   Voice.cardListeners.push(unsubscribe);
 
-  // ⭐ PROFILE CLICK
-  if (createdBy) {
+  //  PROFILE CLICK
+  /* if (createdBy) {
     card.querySelector(".vc-avatar")
       .addEventListener("click", (e) => {
         e.stopPropagation();
         openProfile(createdBy);
       });
-  }
+  } */
 
   console.log("voice-card");
 }
@@ -502,7 +512,8 @@ async function ensureUserJoined(roomId) {
       name: username,
       avatarUrl: avatar,
       role: "audience",
-      joinedAt: serverTimestamp()
+      joinedAt: serverTimestamp(),
+      lastActive: serverTimestamp()
     }, { merge: true });
 
     console.log("User ensured in room ");
@@ -526,7 +537,8 @@ async function roomData(docId) {
       {
         name,
         avatarUrl,
-        joinedAt: serverTimestamp()
+        joinedAt: serverTimestamp(),
+        lastActive: serverTimestamp()
       },
       { merge: true }
     );
@@ -700,12 +712,12 @@ function listeners(docId) {
           });
         }
 
-        //  REMOVE
+        // REMOVE
         if (change.type === "removed") {
           participants.delete(id);
         }
 
-        //  join/leave messages (skip initial load)
+        // join/leave messages
         if (!Voice.initialLoad) {
 
           if (change.type === "added") {
@@ -719,13 +731,41 @@ function listeners(docId) {
 
       });
 
-      //  render UI
-      renderParticipants(Array.from(participants.values()));
+      //  GET ALL USERS
+      const users = Array.from(participants.values());
+
+      //  PRESENCE FILTER (REMOVE GHOSTS)
+      const now = Date.now();
+
+      const activeUsers = users.filter(u => {
+        const last = u.lastActive?.toMillis?.() || 0;
+        return now - last < 15000; // 15 sec timeout
+      });
+
+      //  ADMIN PRESENCE CHECK
+      const admin = activeUsers.find(u => u.role === "admin");
+
+      if (admin) {
+        const last = admin.lastActive?.toMillis?.() || 0;
+        const alive = now - last < 15000;
+
+        if (!alive) {
+          console.log("Admin gone → closing room");
+
+          Voice.roomEnded = true;
+          leaveRoom();
+          return;
+        }
+      }
+
+      //  RENDER ONLY ACTIVE USERS
+      renderParticipants(activeUsers);
 
       Voice.initialLoad = false;
     }
   );
 }
+
 
 
 function renderParticipants(users) {
@@ -734,6 +774,14 @@ function renderParticipants(users) {
   const audienceEl = document.getElementById("audienceArea");
 
   if (!audienceEl) return;
+
+  //  PRESENCE FILTER (ADD HERE)
+  const now = Date.now();
+
+  const activeUsers = users.filter(u => {
+    const last = u.lastActive?.toMillis?.() || 0;
+    return now - last < 15000; // 15 sec
+  });
 
   //  CLEAR STAGE
   stageSlots.forEach(slot => {
@@ -746,7 +794,7 @@ function renderParticipants(users) {
   audienceEl.innerHTML = "";
 
   // normalize roles
-  const normalizedUsers = users.map(u => ({
+  const normalizedUsers = activeUsers.map(u => ({
     ...u,
     role: u.role || "audience"
   }));
@@ -763,7 +811,7 @@ function renderParticipants(users) {
   console.log("Stage:", stageUsers);
   console.log("Audience:", audienceUsers);
 
-  //  FILL STAGE (BY SLOT INDEX)
+  //  FILL STAGE
   stageUsers.forEach((user, index) => {
 
     const slot = document.querySelector(
@@ -784,7 +832,7 @@ function renderParticipants(users) {
 
   });
 
-  //  FILL AUDIENCE (DYNAMIC)
+  //  FILL AUDIENCE
   audienceUsers.forEach(user => {
 
     const div = document.createElement("div");
@@ -918,6 +966,12 @@ async function leaveroom() {
 
   Voice.initialLoad = true;
   Voice.roomEnded = false;
+  
+  //Removing-Local-data
+  localStorage.removeItem("last-room");
+  
+  //stop-presence
+  stopHeartbeat();
 
   //  UI reset
   setTimeout(() => {
@@ -958,6 +1012,9 @@ async function adminLeaveRoom(roomId) {
     const messagesSnap = await getDocs(
       collection(db, "rooms", roomId, "messages")
     );
+    
+    //stop-presence
+    stopHeartbeat();
 
     // batch delete
     const batch = writeBatch(db);
@@ -974,7 +1031,7 @@ async function adminLeaveRoom(roomId) {
 
   } catch (err) {
   console.error("adminLeaveRoom error:", err);
-  console.log(err.stack); // 🔥 ADD THIS
+  console.log(err.stack);
 }
 
   // CLEANUP LISTENERS
@@ -1011,6 +1068,9 @@ async function adminLeaveRoom(roomId) {
 
   Voice.initialLoad = true;
   Voice.roomEnded = false;
+  
+  //remove-local-data
+  localStorage.removeItem("last-room");
 
   //  RESET UI
   setTimeout(() => {
@@ -1167,6 +1227,33 @@ function renderMessage(msg) {
 
 /***** VOICE ROOM HELPERS *****/
 
+let heartbeatInterval = null;
+
+function startHeartbeat() {
+  stopHeartbeat();
+
+  heartbeatInterval = setInterval(() => {
+
+    if (!Voice.currentRoomId || !Id.CURRENT_USER_ID) return;
+
+    updateDoc(
+      doc(db, "rooms", Voice.currentRoomId, "users", Id.CURRENT_USER_ID),
+      {
+        lastActive: serverTimestamp()
+      }
+    ).catch(() => {});
+
+  }, 8000); // every 8 sec
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
+
+
 
 
 //exit-Logic
@@ -1184,6 +1271,9 @@ exitBtn?.addEventListener("click", () => {
   }
 
 });
+
+
+
 
 //handle-loader.
 async function handleConfirm() {
@@ -1203,6 +1293,9 @@ async function handleConfirm() {
     hideLoader();   // ⭐ always hide even if error
   }
 }
+
+
+
 
 //Loader-function.
 function showLoader(text = "Loading...") {
@@ -1231,12 +1324,13 @@ function hideLoader() {
 
 
 
+
+
  /**Leave-modal**/
 
 function showLeaveModal() {
   document.getElementById("leaveModal").classList.remove("hidden");
 }
-
 function hideLeaveModal() {
   const modal = document.getElementById("leaveModal")
   
@@ -1245,7 +1339,6 @@ function hideLeaveModal() {
   
   
 }
-
 
 window.addEventListener("popstate", () => {
 
@@ -1257,7 +1350,6 @@ window.addEventListener("popstate", () => {
   history.pushState(null, "");
   console.log("modal-showed")
 });
-
 
 document.getElementById("cancelLeave")
 ?.addEventListener("click", () => {
@@ -1272,7 +1364,6 @@ document.getElementById("cancelLeave")
 });
 
 
-
 async function exitRoom() {
 
   if (!Voice.currentRoomId) return;
@@ -1283,7 +1374,7 @@ async function exitRoom() {
     await leaveroom();        // DB + Agora
   }
 
-  // 🔥 KEEP THIS (VERY IMPORTANT)
+  //  KEEP THIS (VERY IMPORTANT)
   Voice.currentRoomId = null;
   Voice.isRoomAdmin = false;
 
