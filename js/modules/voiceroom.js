@@ -189,7 +189,7 @@ function loadRooms() {
 async function joinRoomAsAdmin(roomId) {
 
   Voice.currentRoomId = roomId;
-  Voice.isRoomAdmin = true;
+  Voice.isRoomAdmin = true;''
 
   console.log("ROOM ID:", roomId);
   console.log("USER ID:", Id.CURRENT_USER_ID);
@@ -628,6 +628,8 @@ function listenForRequests(roomId) {
 
 
 async function approveRequest(uid) {
+  
+  console.log("Approve clicked", uid);
 
   const roomId = Voice.currentRoomId;
 
@@ -646,7 +648,8 @@ async function approveRequest(uid) {
     if (!userSnap.exists()) {
       console.warn("User not in room, skipping promote");
     } else {
-      //  promote to speaker
+      
+      //promote to speaker
       await updateDoc(userRef, { role: "speaker" });
     }
 
@@ -959,9 +962,9 @@ async function adminLeaveRoom(roomId) {
     console.log("Room deleted successfully");
 
   } catch (err) {
-    console.error("adminLeaveRoom error:", err);
-    return; //  stop cleanup if failed
-  }
+  console.error("adminLeaveRoom error:", err);
+  console.log(err.stack); // 🔥 ADD THIS
+}
 
   // CLEANUP LISTENERS
   Voice.unsubscribeRoom?.();
