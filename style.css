@@ -1106,7 +1106,14 @@ font-size: 13px;
   display: flex;
   flex-direction: column;
   gap: 15px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;   
+  pointer-events: auto; 
  
+}
+
+#voice-card::-webkit-scrollbar {
+  display: none;                /* Chrome, Safari */
 }
 
 .voice-card{
