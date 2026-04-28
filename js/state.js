@@ -35,4 +35,8 @@ isMuted: false
 
 };
 
+export const STORAGE = {
+  
+  STORAGE_KEY: "last-room"
+};
 

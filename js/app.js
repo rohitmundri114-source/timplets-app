@@ -15,10 +15,10 @@ import { initRouter } from "./router.js";
 import { initLoginPage } from "./modules/login.js";
 import { initProfile } from "./modules/profile.js";
 import { initVideoFeed } from "./modules/videofeed.js";
-import { initVoiceRooms } from "./modules/voiceroom.js";
+import { initVoiceRooms,joinRoom } from "./modules/voiceroom.js";
 import { listenAuth} from "../services/auth.js";
 import { syncUserProfile,initSetupProfile } from "../helper/Syncuser.js";
-import { Id } from "./state.js";
+import { Id, STORAGE } from "./state.js";
 import { navigate } from "./router.js";
 
 
@@ -68,17 +68,17 @@ function startApp() {
     }
     
     //Reocovering-old-session
-    const STORAGE_KEY = "last-room";
     setTimeout(() => {
-  const lastRoom = localStorage.getItem(STORAGE_KEY);
-
+  const lastRoom = localStorage.getItem(STORAGE.STORAGE_KEY);
+   console.log("session-starting")
+  
   if (lastRoom && Id.CURRENT_USER_ID) {
     if (Voice.currentRoomId !== lastRoom) {
       console.log("Rejoining room:", lastRoom);
       joinRoom(lastRoom);
     }
   }
-}, 100);
+}, 800);
 
   });
 

@@ -1,4 +1,4 @@
-import { Id, Voice } from "../state.js";
+import { Id, Voice,STORAGE } from "../state.js";
 import { openProfile } from "./profile.js";
 import { navigate } from "../router.js";
 import {
@@ -194,6 +194,10 @@ async function joinRoomAsAdmin(roomId) {
 
   console.log("ROOM ID:", roomId);
   console.log("USER ID:", Id.CURRENT_USER_ID);
+  
+  if (!heartbeatInterval) {
+    startHeartbeat();
+  }
 
   if (!Id.CURRENT_USER_ID) {
     console.error("User not logged in");
@@ -249,7 +253,7 @@ async function joinRoomAsAdmin(roomId) {
 
 
 
-async function joinRoom(docId) {
+export async function joinRoom(docId) {
   
   //clearing-old-data.
   participants.clear();
@@ -272,8 +276,8 @@ async function joinRoom(docId) {
   Voice.currentRoomId = docId;
   
   //SAVE SESSION EARLY
-localStorage.removeItem("STORAGE_KEY");
-localStorage.setItem("STORAGE_KEY", docId);
+localStorage.removeItem(STORAGE.STORAGE_KEY);
+localStorage.setItem(STORAGE.STORAGE_KEY, docId);
 
 
   try {
@@ -481,7 +485,6 @@ function resetUI() {
 
 async function ensureUserJoined(roomId) {
 
-  //  capture stable userId
   const userId = Id.CURRENT_USER_ID;
 
   if (!roomId || !userId) {
@@ -493,6 +496,22 @@ async function ensureUserJoined(roomId) {
 
     const userRef = doc(db, "rooms", roomId, "users", userId);
 
+    //  CHECK EXISTENCE
+    const snap = await getDoc(userRef);
+
+    if (snap.exists()) {
+
+      //  REJOIN → DO NOT RESET ROLE
+      await updateDoc(userRef, {
+        lastActive: serverTimestamp()
+      });
+
+      console.log("User rejoined (lastActive updated)");
+
+      return;
+    }
+
+    //  FIRST TIME JOIN → fetch profile
     const { data: profile, error } = await supabaseClient
       .from("profiles")
       .select("username, avatar_url")
@@ -504,19 +523,19 @@ async function ensureUserJoined(roomId) {
       return;
     }
 
-    //  fallback (important)
     const username = profile?.username || "User";
     const avatar = profile?.avatar_url || "default.png";
 
+    //  CREATE USER
     await setDoc(userRef, {
       name: username,
       avatarUrl: avatar,
       role: "audience",
       joinedAt: serverTimestamp(),
       lastActive: serverTimestamp()
-    }, { merge: true });
+    });
 
-    console.log("User ensured in room ");
+    console.log("User added to room");
 
   } catch (err) {
     console.error("ensureUserJoined error:", err);
@@ -968,7 +987,7 @@ async function leaveroom() {
   Voice.roomEnded = false;
   
   //Removing-Local-data
-  localStorage.removeItem("STORAGE_KEY");
+  localStorage.removeItem(STORAGE.STORAGE_KEY);
   
   //stop-presence
   stopHeartbeat();
@@ -1070,7 +1089,7 @@ async function adminLeaveRoom(roomId) {
   Voice.roomEnded = false;
   
   //remove-local-data
-  localStorage.removeItem("STORAGE_KEY");
+  localStorage.removeItem(STORAGE.STORAGE_KEY);
 
   //  RESET UI
   setTimeout(() => {
