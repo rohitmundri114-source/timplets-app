@@ -271,6 +271,9 @@ async function joinRoom(docId) {
   
   Voice.currentRoomId = docId;
   
+  //SAVE SESSION EARLY
+localStorage.removeItem("STORAGE_KEY");
+localStorage.setItem("STORAGE_KEY", docId);
 
 
   try {
@@ -300,9 +303,6 @@ async function joinRoom(docId) {
       document.getElementById("raiseHandBtn")?.classList.remove("hidden");
     }
     
-    
-    //Storing-Last-Session.
-    localStorage.setItem("last-room",docId);
     
     //Mark ready (LAST)
     Voice.isReady = true;
@@ -968,7 +968,7 @@ async function leaveroom() {
   Voice.roomEnded = false;
   
   //Removing-Local-data
-  localStorage.removeItem("last-room");
+  localStorage.removeItem("STORAGE_KEY");
   
   //stop-presence
   stopHeartbeat();
@@ -1070,7 +1070,7 @@ async function adminLeaveRoom(roomId) {
   Voice.roomEnded = false;
   
   //remove-local-data
-  localStorage.removeItem("last-room");
+  localStorage.removeItem("STORAGE_KEY");
 
   //  RESET UI
   setTimeout(() => {

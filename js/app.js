@@ -68,14 +68,17 @@ function startApp() {
     }
     
     //Reocovering-old-session
+    const STORAGE_KEY = "last-room";
     setTimeout(() => {
-  const lastRoom = localStorage.getItem("lastRoomId");
+  const lastRoom = localStorage.getItem(STORAGE_KEY);
 
-  if (lastRoom) {
-    console.log("Rejoining room:", lastRoom);
-    joinRoom(lastRoom);
+  if (lastRoom && Id.CURRENT_USER_ID) {
+    if (Voice.currentRoomId !== lastRoom) {
+      console.log("Rejoining room:", lastRoom);
+      joinRoom(lastRoom);
+    }
   }
-}, 800); 
+}, 100);
 
   });
 
