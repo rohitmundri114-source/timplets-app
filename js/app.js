@@ -15,7 +15,8 @@ import { initRouter } from "./router.js";
 import { initLoginPage } from "./modules/login.js";
 import { initProfile } from "./modules/profile.js";
 import { initVideoFeed } from "./modules/videofeed.js";
-import { initVoiceRooms,joinRoom } from "./modules/voiceroom.js";
+import { initVoiceRooms,joinRoom,
+joinRoomAsAdmin} from "./modules/voiceroom.js";
 import { listenAuth} from "../services/auth.js";
 import { syncUserProfile,initSetupProfile } from "../helper/Syncuser.js";
 import { Id, STORAGE } from "./state.js";
@@ -67,18 +68,43 @@ function startApp() {
       navigate("flashcards");
     }
     
-    //Reocovering-old-session
-    setTimeout(() => {
-  const lastRoom = localStorage.getItem(STORAGE.STORAGE_KEY);
-   console.log("session-starting")
-  
-  if (lastRoom && Id.CURRENT_USER_ID) {
-    if (Voice.currentRoomId !== lastRoom) {
-      console.log("Rejoining room:", lastRoom);
-      joinRoom(lastRoom);
+    //REJION
+  if (user) {
+
+    const lastRoom = localStorage.getItem(STORAGE.STORAGE_KEY);
+
+    if (lastRoom) {
+
+      const userRef = doc(
+        db,
+        "rooms",
+        lastRoom,
+        "users",
+        Id.CURRENT_USER_ID
+      );
+
+      try {
+        const snap = await getDoc(userRef);
+
+        if (snap.exists()) {
+          const role = snap.data().role;
+
+          console.log("Rejoining as:", role);
+
+          if (role === "admin") {
+            await joinRoomAsAdmin(lastRoom);
+          } else {
+            await joinRoom(lastRoom);
+          }
+        } else {
+          localStorage.removeItem(STORAGE.STORAGE_KEY);
+        }
+
+      } catch (err) {
+        console.error("Rejoin error:", err);
+      }
     }
   }
-}, 800);
 
   });
 

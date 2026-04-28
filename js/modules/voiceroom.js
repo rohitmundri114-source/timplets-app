@@ -73,6 +73,7 @@ const CURRENT_USER_ID = Id.CURRENT_USER_ID;
 
 const participants = new Map();
 
+let heartbeatInterval = null;
 
 const createbtn = document.getElementById("create-room");
 const container = document.getElementById("input-container");
@@ -187,7 +188,7 @@ function loadRooms() {
 
 
 
-async function joinRoomAsAdmin(roomId) {
+ export async function joinRoomAsAdmin(roomId) {
 
   Voice.currentRoomId = roomId;
   Voice.isRoomAdmin = true;''
@@ -247,6 +248,9 @@ async function joinRoomAsAdmin(roomId) {
     console.error(err);
     Voice.isReady = false;
   }
+  
+  //Saving-local
+  localStorage.setItem(STORAGE.STORAGE_KEY, docId);
 
   console.log("joinRoomAsAdmin");
 }
@@ -772,7 +776,7 @@ function listeners(docId) {
           console.log("Admin gone → closing room");
 
           Voice.roomEnded = true;
-          leaveRoom();
+          leaveroom();
           return;
         }
       }
@@ -1246,7 +1250,6 @@ function renderMessage(msg) {
 
 /***** VOICE ROOM HELPERS *****/
 
-let heartbeatInterval = null;
 
 function startHeartbeat() {
   stopHeartbeat();
@@ -1263,6 +1266,7 @@ function startHeartbeat() {
     ).catch(() => {});
 
   }, 8000); // every 8 sec
+  console.log("heartbeat-started")
 }
 
 function stopHeartbeat() {
