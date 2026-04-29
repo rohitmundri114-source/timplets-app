@@ -191,7 +191,11 @@ function loadRooms() {
  export async function joinRoomAsAdmin(roomId) {
 
   Voice.currentRoomId = roomId;
-  Voice.isRoomAdmin = true;''
+  Voice.isRoomAdmin = true;
+  
+    //Saving-local
+  localStorage.setItem(STORAGE.STORAGE_KEY, roomId);
+  
 
   console.log("ROOM ID:", roomId);
   console.log("USER ID:", Id.CURRENT_USER_ID);
@@ -222,7 +226,8 @@ function loadRooms() {
         name,
         avatarUrl,
         role: "admin",
-        joinedAt: serverTimestamp()
+        joinedAt: serverTimestamp(),
+        lastActive: serverTimestamp()
       }
     );
 
@@ -249,8 +254,7 @@ function loadRooms() {
     Voice.isReady = false;
   }
   
-  //Saving-local
-  localStorage.setItem(STORAGE.STORAGE_KEY, docId);
+
 
   console.log("joinRoomAsAdmin");
 }

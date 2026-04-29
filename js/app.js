@@ -18,8 +18,9 @@ import { initVideoFeed } from "./modules/videofeed.js";
 import { initVoiceRooms,joinRoom,
 joinRoomAsAdmin} from "./modules/voiceroom.js";
 import { listenAuth} from "../services/auth.js";
+import {doc,db,getDoc} from "../services/firebase.js"
 import { syncUserProfile,initSetupProfile } from "../helper/Syncuser.js";
-import { Id, STORAGE } from "./state.js";
+import { Id, STORAGE} from "./state.js";
 import { navigate } from "./router.js";
 
 
